@@ -41,11 +41,10 @@ class layer(object):
         All weights will be initially randomized, and the biases will be set to 1
         '''
         self.m_lastLayer = lastLayer 
+        self.m_size = size #set the number of neurons in this layer
         if lastLayer is None: # if nothing was passed for the 
             self.m_isInput = True # mark this layer as an input
             return #terminate, we don't need to set the weights or bias as the activation of this layer will be input
-        
-        self.m_size = size #set the number of neurons in this layer
         
         self.m_weights = np.random.rand(self.m_size, lastLayer.m_size) # randomize the weights to the last layer (*)
         self.m_bias = np.ones(self.m_size) # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
