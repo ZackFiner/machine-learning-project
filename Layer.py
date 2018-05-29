@@ -32,7 +32,7 @@ class layer(object):
     m_weights = np.matrix # matrix with the associated weights from each neuron in
     m_bias = np.array # a column vector containing the biases
     m_activation = np.array # activations from the last network call, this will change every time a new value is input
-    m_isInput = 0 #initially false
+    m_isInput = False #initially false
     m_size = 0 #initially empty
     m_lastLayer = None
     def __init__(self, lastLayer, size):
@@ -42,7 +42,7 @@ class layer(object):
         '''
         self.m_lastLayer = lastLayer 
         if lastLayer is None: # if nothing was passed for the 
-            self.m_isInput = 1 # mark this layer as an input
+            self.m_isInput = True # mark this layer as an input
             return #terminate, we don't need to set the weights or bias as the activation of this layer will be input
         
         self.m_size = size #set the number of neurons in this layer
