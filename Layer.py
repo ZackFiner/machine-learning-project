@@ -53,8 +53,8 @@ class layer(object):
     
     def feedforward(self):
         #then apply sigmoid function to map to activations, possibly using this: https://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.vectorize.html
-        rawM = np.add(np.matmul(self.m_weights, np.asmatrix(self.m_lastLayer.m_activation)), self.m_bias) #calculate weighted input
+        rawM = np.add(np.matmul(self.m_weights, np.asmatrix(self.m_lastLayer.m_activation)), np.asmatrix(self.m_bias)) #calculate weighted input
         mapFunc = np.vectorize(sigmoid) # use the vectorize interface to get a mapping function with sigmoid
-        self.m_activation = mapFunc(rawM) # map all values using the sigmoid function, and assign it to the activation vector for this layer
+        self.m_activation = np.asarray(mapFunc(rawM)) # map all values using the sigmoid function, and assign it to the activation vector for this layer
     #end of feedforward
     
