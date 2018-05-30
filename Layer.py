@@ -35,19 +35,21 @@ class layer(object):
     m_isInput = False #initially false
     m_size = 0 #initially empty
     m_lastLayer = None
-    def __init__(self, lastLayer, size):
+    def __init__(self, size, lastLayer):
         '''
         Initialize this layer so that it has the specified number of neurons, and reference to the last layer.
         All weights will be initially randomized, and the biases will be set to 1
         '''
-        self.m_lastLayer = lastLayer 
+        
         self.m_size = size #set the number of neurons in this layer
         if lastLayer is None: # if nothing was passed for the 
             self.m_isInput = True # mark this layer as an input
             return #terminate, we don't need to set the weights or bias as the activation of this layer will be input
         
+         
         self.m_weights = np.random.rand(self.m_size, lastLayer.m_size) # randomize the weights to the last layer (*)
         self.m_bias = np.ones(self.m_size) # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
+        self.m_lastLayer = lastLayer
     #end of init
     
     def feedforward(self):
