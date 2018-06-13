@@ -50,12 +50,29 @@ class layer(object):
         self.m_weights = np.random.rand(self.m_size, lastLayer.m_size) # randomize the weights to the last layer (*)
         self.m_bias = np.ones(self.m_size) # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
         self.m_lastLayer = lastLayer
-    #end of init
+    #end of __init__
     
-    def feedforward(self):
-        #then apply sigmoid function to map to activations, possibly using this: https://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.vectorize.html
-        rawM = np.add(np.matmul(self.m_weights, np.asmatrix(self.m_lastLayer.m_activation)), np.asmatrix(self.m_bias)) #calculate weighted input
+    def weightedInput(self):
+        return np.add(np.matmul(self.m_weights, np.asmatrix(self.m_lastLayer.m_activation)), np.asmatrix(self.m_bias))#calculate weighted input
+    #end weightedInput
+    
+    def feedforward(self):    
+        rawM = self.weightedInput() #calculate weighted input
         mapFunc = np.vectorize(sigmoid) # use the vectorize interface to get a mapping function with sigmoid
         self.m_activation = np.asarray(mapFunc(rawM)) # map all values using the sigmoid function, and assign it to the activation vector for this layer
     #end of feedforward
     
+    def getPrimeWeighted(self):
+        rawM = self.weightedInput()
+        mapFunc = np.vectorize(sigmoidPrime)
+        return np.asarray(mapFunc(rawM))
+    #end of getPrimeWeighted
+    
+    def setActivation(self, data):
+        if self.m_isInput:
+            self.m_activation = data
+        #end if
+    #end of setActivation
+    
+    def getMaxIndex(self):
+        return np.argmax(self.m_activation)
