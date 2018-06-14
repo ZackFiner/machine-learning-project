@@ -36,8 +36,7 @@ class Network(object):
         self.m_layers.flat[2] = layer(HIDDEN_NEURON_NUM, self.m_layers.flat[1])
         self.m_outputLayer = layer(10, self.m_layers.flat[2]) # output layer for image
         self.m_layers.flat[3] = self.m_outputLayer
-        
-    #end of __init__
+
     
     def getCost(self, expectedValue):
         '''
@@ -45,14 +44,12 @@ class Network(object):
         '''
         dif = expectedValue - self.m_outputLayer.m_activation
         return 0.5*(np.dot(dif, dif))
-    #end of getCost
     
     def getErrorOutput(self, expectedValue):
         '''
         returns the error for a given input
         '''
         return np.multiply(self.m_outputVec - expectedValue, self.m_outputLayer.getPrimeWeighted())
-    #end of getErrorOutput
     def calcError(self, expectedValue):
         localLastError = self.getErrorOutput(expectedValue)
         numOfLayers = self.m_numberOfLayers
@@ -67,9 +64,13 @@ class Network(object):
     
     def trainNetwork(self):
         '''
-        perform multiple training epoch's
+        Perform multiple training epoch's
         each epoch consists of running every training example through the network
         and then calculating cost, then correcting weights and biases with the given costs
+        
+        i'm still learning the terminology hear, but i believe this implementation uses
+        stoischratic gradient descent (because it updates the network after each test)
+        instead of batch gradient descent (where we would compile the data from each test, and then process it)
         '''
         for epochIndex in range(0, 20): # for each example in the number of training epochs
             for trainingImage in self.m_trainingExamples: # for each training example
@@ -80,7 +81,10 @@ class Network(object):
                 for x in range(1, self.m_numberOfLayers):
                     layerError = self.m_currentError.flat[x]
                     self.m_layers.flat[x].m_bias =np.subtract(self.m_layers.flat[x].m_bias,  np.multiply(gradientConstant,layerError))
-                    leftSide = np.dot(layerError, self.m_layers.flat[x-1].m_activation)
-                    rightSide = np.multiply(gradientConstant,self.m_layers.flat[x].m_weights)
-                    self.m_layers.flat[x].m_weights = 
-                    # next, update weights and biases
+                    rightSide = np.matmul(layerError, self.m_layers.flat[x-1].m_activation.transpose()) # this should be a matrix, not a scalar/vector!
+                    leftSide = np.multiply(gradientConstant,self.m_layers.flat[x].m_weights)
+                    finalsub = np.multiply(leftSide, rightSide)
+                    self.m_layers.flat[x].m_weights = np.subtract(self.m_layers.flat[x].m_weights, finalsub)
+        
+    
+    
