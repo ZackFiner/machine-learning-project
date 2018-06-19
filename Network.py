@@ -74,6 +74,7 @@ class Network(object):
         '''
         for epochIndex in range(0, 20): # for each example in the number of training epochs
             for trainingImage in self.m_trainingExamples: # for each training example
+                self.m_inputLayer.setActivation(trainingImage)
                 for x in range(1, self.m_numberOfLayers):
                     self.m_layers.flat[x].feedforward() 
                 gradientConstant = self.TRAININGTIME / self.m_trainingExamples.size
@@ -86,5 +87,4 @@ class Network(object):
                     finalsub = np.multiply(leftSide, rightSide)
                     self.m_layers.flat[x].m_weights = np.subtract(self.m_layers.flat[x].m_weights, finalsub)
         
-    
     
