@@ -52,7 +52,7 @@ class layer(object):
         self.m_lastLayer = lastLayer
     
     def weightedInput(self):
-        return np.add(np.matmul(self.m_weights, np.asmatrix(self.m_lastLayer.m_activation)), np.asmatrix(self.m_bias))#calculate weighted input
+        return np.add(np.dot(self.m_weights, self.m_lastLayer.m_activation), self.m_bias)#calculate weighted input
     
     def feedforward(self):    
         rawM = self.weightedInput() #calculate weighted input
