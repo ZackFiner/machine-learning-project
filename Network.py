@@ -62,14 +62,13 @@ class Network(object):
     def calcError(self, expectedValue):
         localLastError = self.getErrorOutput(expectedValue)
         numOfLayers = self.m_numberOfLayers
-        self.m_currentError.insert(numOfLayers-1, localLastError)
+        self.m_currentError.insert(numOfLayers-1, localLastError) # insert the first error ~(expected - what we got for output)
         # iteratively determine the error of a specific layer, moving backward from the given error
-        for index in range(1, numOfLayers-1):
-            leftSide = np.dot(self.m_layers[numOfLayers-index].m_weights.transpose(), localLastError)
-            rightSide = self.m_layers[numOfLayers-1-index].getPrimeWeighted()
-            localLastError = np.multiply(leftSide, rightSide)
-            self.m_currentError.insert(numOfLayers-1-index, localLastError)
-
+        for index in range(numOfLayers-2, 0, -1): #loop backwards from the second to last layer to the second layer (we don't update the input layer!)
+            leftSide = np.dot(self.m_layers[index+1].m_weights.transpose(), localLastError) # index + 1 will be the layer in front of this one
+            rightSide = self.m_layers[index].getPrimeWeighted() # we get the activations for the current layer, and return the prime weighted value
+            localLastError = np.multiply(leftSide, rightSide) # hadamard product between the prime weighted and
+            self.m_currentError.insert(index, localLastError)
 
         return localLastError
 
@@ -102,7 +101,7 @@ class Network(object):
                 for x in range(1,self.m_numberOfLayers):
                     layerError = self.m_currentError[x]
                     #print(layerError)
-                    self.m_layers[x].m_bias = self.m_layers[x].m_bias - np.multiply(gradientConstant,layerError)
+                    self.m_layers[x].m_bias = self.m_layers[x].m_bias - np.multiply(gradientConstant, layerError)
                     rightSide = np.matmul(makeColumnVec(layerError), makeColumnVec(self.m_layers[x-1].m_activation).transpose()) # this should be a matrix, not a scalar/vector!
                     leftSide = np.multiply(gradientConstant,self.m_layers[x].m_weights)
                     finalsub = np.multiply(leftSide, rightSide)
