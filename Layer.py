@@ -7,12 +7,14 @@ import numpy as np
 NUM_HIDDEN = 512
 NUM_INPUT = 784
 def sigmoid(nValue):
-    return 1/(1+np.exp(-nValue))
+    x = np.clip(nValue, -500,500)
+    return 1/(1+np.exp(-x))
 
 def sigmoidPrime(nValue):
-    d = sigmoid(nValue)
-    #return np.exp(-nValue)*d*d
-    return np.exp(-nValue)*d*d
+    x = np.clip(nValue, -500, 500)
+    d = sigmoid(x)
+    return np.exp(-x)*d*d
+
 
 class layer(object):
     '''
@@ -30,7 +32,7 @@ class layer(object):
     where nL is the activations for the next layer of the network
     
     '''
-    m_weights = np.matrix # matrix with the associated weights from each neuron in
+    m_weights = np.array # matrix with the associated weights from each neuron in
     m_bias = np.array # a column vector containing the biases
     m_activation = np.array # activations from the last network call, this will change every time a new value is input
     m_isInput = False #initially false

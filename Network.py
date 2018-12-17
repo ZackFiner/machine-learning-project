@@ -34,7 +34,7 @@ class Network(object):
         '''
         Constructor
         '''
-        HIDDEN_NEURON_NUM = 450
+        HIDDEN_NEURON_NUM = 30
         INPUT_IMAGE_SIZE = 784
 
         #self.m_layers.put(0, self.m_outputLayer)
@@ -88,7 +88,7 @@ class Network(object):
         stoischratic gradient descent (because it updates the network after each test)
         instead of batch gradient descent (where we would compile the data from each test, and then process it)
         '''
-        for epochIndex in range(0, 1): # for each example in the number of training epochs
+        for epochIndex in range(0, 20): # for each example in the number of training epochs
             i = 0
             p=0
             print('epoch'+str(epochIndex))
@@ -102,14 +102,14 @@ class Network(object):
                 imgdata = np.array(trainingImage)
                 self.runInput(imgdata)
                 #gradientConstant = self.TRAININGTIME / len(self.m_trainingExamples)
-                gradientConstant = 1.0
+                gradientConstant = 5.0
                 self.calcError(toNumpyArray(self.m_trainingSolutions[i], 10)) # calculate the error for each layer
                 i += 1
                 for x in range(1,self.m_numberOfLayers):
                     layerError = self.m_currentError[x]
                     self.m_layers[x].m_bias = self.m_layers[x].m_bias - gradientConstant*layerError
-                    rightSide = np.dot(layerError[np.newaxis], self.m_layers[x-1].m_activation[np.newaxis].T) # unfortunatley, we need to do some weird axis splitting here to get the behavior we want (column vector * row vector)
-                    leftSide = gradientConstant*self.m_layers[x].m_weights
+                    rightSide = gradientConstant*np.dot(layerError[np.newaxis].T, self.m_layers[x-1].m_activation[np.newaxis]) # unfortunatley, we need to do some weird axis splitting here to get the behavior we want (column vector * row vector)
+                    leftSide = self.m_layers[x].m_weights
                     finalsub = np.multiply(leftSide, rightSide)
                     self.m_layers[x].m_weights = self.m_layers[x].m_weights - finalsub
 
@@ -135,7 +135,7 @@ class Network(object):
     def testReults(self):
         successes = 0
 
-        for x in range(0, self.m_trainingExamples.shape[0]):
+        for x in range(0, len(self.m_trainingExamples)):
             img = self.m_trainingExamples[x]
             self.runInput(img)
             correct = self.m_trainingSolutions[x]
@@ -167,6 +167,7 @@ mndata = MNIST('samples')
 images, labels = mndata.load_testing()
 d = Network()
 d.m_trainingExamples = np.asarray(np.vectorize(lambda x: x/255)(images))
+d.m_trainingExamples = images
 printImg(images[1])
 print(labels[1])
 d.m_trainingSolutions = labels
