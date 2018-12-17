@@ -37,7 +37,7 @@ class Network(object):
         INPUT_IMAGE_SIZE = 784
 
         #self.m_layers.put(0, self.m_outputLayer)
-        self.m_inputLayer = layer(INPUT_IMAGE_SIZE)
+        self.m_inputLayer = layer(INPUT_IMAGE_SIZE, None)
         self.m_layers.insert(0, self.m_inputLayer )
         self.m_layers.insert(1, layer(HIDDEN_NEURON_NUM, self.m_layers[0]))
         self.m_layers.insert(2, layer(HIDDEN_NEURON_NUM, self.m_layers[1]))
@@ -68,7 +68,7 @@ class Network(object):
             leftSide = np.dot(self.m_layers[index+1].m_weights.transpose(), localLastError) # index + 1 will be the layer in front of this one
             rightSide = self.m_layers[index].getPrimeWeighted() # we get the activations for the current layer, and return the prime weighted value
             localLastError = np.multiply(leftSide, rightSide) # hadamard product between the prime weighted and
-            self.m_currentError.insert(index, localLastError)
+            self.m_currentError[index] = localLastError
 
         return localLastError
 
@@ -102,10 +102,12 @@ class Network(object):
                     layerError = self.m_currentError[x]
                     #print(layerError)
                     self.m_layers[x].m_bias = self.m_layers[x].m_bias - np.multiply(gradientConstant, layerError)
-                    rightSide = np.matmul(makeColumnVec(layerError), makeColumnVec(self.m_layers[x-1].m_activation).transpose()) # this should be a matrix, not a scalar/vector!
+                    #print(self.m_layers[x - 1].m_activation.shape)
+                    #print(self.m_layers[x-1].m_activation[np.newaxis].shape)
+                    rightSide = np.dot(layerError[np.newaxis].T, (self.m_layers[x-1].m_activation)[np.newaxis]) # unfortunatley, we need to do some weird axis splitting here to get the behavior we want (column vector * row vector)
                     leftSide = np.multiply(gradientConstant,self.m_layers[x].m_weights)
                     finalsub = np.multiply(leftSide, rightSide)
-                    print(finalsub.shape)
+                    #print(finalsub.shape)
                     self.m_layers[x].m_weights = np.subtract(self.m_layers[x].m_weights, finalsub)
             print('solution for 2:')
             print(self.getSolution(self.m_trainingExamples[0]))

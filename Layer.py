@@ -47,12 +47,13 @@ class layer(object):
             return #terminate, we don't need to set the weights or bias as the activation of this layer will be input
         
          
-        self.m_weights = np.random.rand(self.m_size, lastLayer.m_size) # randomize the weights to the last layer (*)
-        self.m_bias = np.ones(self.m_size) # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
+        self.m_weights = np.random.rand(self.m_size,lastLayer.m_size) # randomize the weights to the last layer (*)
+        self.m_bias = np.random.rand(self.m_size) # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
         self.m_lastLayer = lastLayer
     
     def weightedInput(self):
-        return np.add(np.dot(self.m_weights, self.m_lastLayer.m_activation), self.m_bias)#calculate weighted input
+        v = np.dot(self.m_weights, self.m_lastLayer.m_activation)
+        return v + self.m_bias#calculate weighted input
     
     def feedforward(self):    
         rawM = self.weightedInput() #calculate weighted input
@@ -66,7 +67,8 @@ class layer(object):
     
     def setActivation(self, data):
         if self.m_isInput:
-            self.m_activation = data
+            mapFunc = np.vectorize(sigmoid)
+            self.m_activation = np.asarray(mapFunc(data))
     
     def getMaxIndex(self):
         return np.argmax(self.m_activation)
