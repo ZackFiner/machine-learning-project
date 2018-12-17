@@ -11,6 +11,7 @@ def sigmoid(nValue):
 
 def sigmoidPrime(nValue):
     d = sigmoid(nValue)
+    #return np.exp(-nValue)*d*d
     return np.exp(-nValue)*d*d
 
 class layer(object):
@@ -47,14 +48,14 @@ class layer(object):
             return #terminate, we don't need to set the weights or bias as the activation of this layer will be input
         
          
-        self.m_weights = np.random.rand(self.m_size,lastLayer.m_size) # randomize the weights to the last layer (*)
-        self.m_bias = np.random.rand(self.m_size) # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
+        self.m_weights = 2*np.random.rand(self.m_size,lastLayer.m_size)-1 # randomize the weights to the last layer (*)
+        self.m_bias = 2*np.random.rand(self.m_size)-1 # allocate a column vector of biases, initially all of 1 (i chose this arbitrarily)
         self.m_lastLayer = lastLayer
     
     def weightedInput(self):
         v = np.dot(self.m_weights, self.m_lastLayer.m_activation)
         return v + self.m_bias#calculate weighted input
-    
+
     def feedforward(self):    
         rawM = self.weightedInput() #calculate weighted input
         mapFunc = np.vectorize(sigmoid) # use the vectorize interface to get a mapping function with sigmoid
@@ -68,7 +69,7 @@ class layer(object):
     def setActivation(self, data):
         if self.m_isInput:
             mapFunc = np.vectorize(sigmoid)
-            self.m_activation = np.asarray(mapFunc(data))
+            self.m_activation = data
     
     def getMaxIndex(self):
         return np.argmax(self.m_activation)
