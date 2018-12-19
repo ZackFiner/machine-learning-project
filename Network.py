@@ -1,175 +1,202 @@
-'''
-Created on May 29, 2018
-
-@author: Zackary Finer
-'''
-import os
 import numpy as np
 from PIL import Image
 from mnist import MNIST
-from Layer import layer
-from numpy.lib.function_base import gradient
-class Network(object):
+import random
+import math
+class Network:
     '''
-    There is something VERY WRONG with the code below, and the code in layer. All values produced by the get weighted product are large
-    , and as such when they're run through sigmoid, they produce 1 EVERY TIME. I have clearly mis-understood something (or multiple things)
-    along the way up to now, so i'd start by making sure our assumptions about sigmoid were correct, and then work out for there.
+    A neural network has layers: every layer has weights, biases, and a node
+    weights are coefficients for connections to other nodes
+    biases are a scalar addative to nodes
+    and the node is a value
+    we can conceptualize these things as vectors and matrices,
     '''
-    '''
-    The objective here is to apply backpropegation to train this network to perform some task
-    In order to do this, we must determine the form of some cost function, which can be used to determine
-    error from training sessions, and optimize the weights and biases for each neruon in order to reduce these errors
-    '''
-    m_layers = list()
-
-    m_inputLayer = None
-    m_outputLayer = None
-    m_trainingExamples = None
-    m_trainingSolutions = None
-    m_numberOfLayers = 3
-    m_currentError = [None]*m_numberOfLayers
-
-    TRAININGTIME = 50000
     def __init__(self):
+        self.numlayers = 3
+        self.layerShape = [784, 250, 10] # we have one hidden layer of 30 neurons, an input of 784, and an output of 10
+        #weight dimensions = thisLayerSze x lastLayerSize
+        self.weights = list()
+        self.bias = list()
+        self.weights.insert(0, np.zeros((784, 1)))
+        self.bias.insert(0, np.zeros((784, 1)))
+
+        for x in range(1,self.numlayers):#we start at 1 because input doesn't need weights (we're putting activation values directly in)
+            self.weights.insert(x, 2*np.random.rand(self.layerShape[x], self.layerShape[x-1])-1)
+            self.bias.insert(x, 2*np.random.rand(self.layerShape[x], 1)-1)
+        self.activations = [np.zeros((a, 1)) for a in self.layerShape]# we needn't set this, as it will change every time we run the network
+        self.rawActives = [np.zeros((a, 1)) for a in self.layerShape] # we also may need this
         '''
-        Constructor
+                Note: It's important (as i had to learn the hard way) that you ensure the shape
+                of your arrays is correct. We will be working with quite a few of these things and it can be
+                a real headache to try and figure out why one vector is not able to be added to another.
         '''
-        HIDDEN_NEURON_NUM = 30
-        INPUT_IMAGE_SIZE = 784
 
-        #self.m_layers.put(0, self.m_outputLayer)
-        self.m_inputLayer = layer(INPUT_IMAGE_SIZE, None)
-        self.m_layers.insert(0, self.m_inputLayer )
-        self.m_layers.insert(1, layer(HIDDEN_NEURON_NUM, self.m_layers[0]))
-        #self.m_layers.insert(2, layer(HIDDEN_NEURON_NUM, self.m_layers[1]))
-        self.m_outputLayer = layer(10, self.m_layers[1]) # output layer for image
-        self.m_layers.insert(2, self.m_outputLayer)
+    def feedforward(self, inputActives):
+        self.activations[0] = inputActives/255
+        for x in range(1, self.numlayers):
+            self.rawActives[x] = np.dot(self.weights[x], self.activations[x-1])+self.bias[x]
+            self.activations[x] = sigmoid(self.rawActives[x])
 
 
-    def getCost(self, expectedValue):
+    def backprop(self,input, expected):
         '''
-        Returns quadratic cost for a given input
+        :param expected: what output you expect for this example
+        :param input: the input activations
+        :return:
+        3 numpy objects
+        errWeight: numpy matrices of errors on each layer's weights
+        errBiass: numpy vector of errors on each layer's biases
+        activesDs: numpy vector of the activations for each layer
         '''
-        dif = expectedValue - self.m_outputLayer.m_activation
-        return 0.5*(np.dot(dif, dif))
+        errWeights = [np.zeros(w.shape) for w in self.weights]
+        errBiass = [np.zeros(b.shape) for b in self.bias]
+        self.feedforward(input)
+        activesDs = self.activations.copy()
+        error = self.costFunction(self.activations[-1], expected) * sigmoidprime(self.rawActives[-1])
+        errWeights[self.numlayers-1] = np.dot(error, self.activations[self.numlayers-2].T)
+        errBiass[self.numlayers-1] = error
+        '''remember, we are multiplying with the layer behind us'''
+        #Note: as we'll see below, it is important that our activations are a column vector
+        for x in range(self.numlayers-2, 0, -1):  # we work our way backwards from the second to last layer
+            error = np.dot(self.activations[x+1].T, error) * sigmoidprime(self.rawActives[x]) # calculate this layer's error using the transpose of weights infront
+            errWeights[x] = np.dot(error, self.activations[x-1].T)  # Note that we transpose activations, the result should be a matrix, not vector
+            errBiass[x] = error
 
-    def getErrorOutput(self, expectedValue):
-        '''
-        returns the error for a given input
-        '''
-        diff = self.m_outputLayer.m_activation - expectedValue
-        v = self.m_outputLayer.getPrimeWeighted()
-        return np.multiply(diff, self.m_outputLayer.getPrimeWeighted())
+        return errWeights, errBiass, activesDs
 
-    def calcError(self, expectedValue):
-        localLastError = self.getErrorOutput(expectedValue)
-        numOfLayers = self.m_numberOfLayers
-        self.m_currentError.insert(numOfLayers-1, localLastError) # insert the first error ~(expected - what we got for output)
-        # iteratively determine the error of a specific layer, moving backward from the given error
-        for index in range(numOfLayers-2, 0, -1): #loop backwards from the second to last layer to the second layer (we don't update the input layer!)
-            leftSide = np.dot(self.m_layers[index+1].m_weights.T, localLastError) # index + 1 will be the layer in front of this one
-            rightSide = self.m_layers[index].getPrimeWeighted() # we get the activations for the current layer, and return the prime weighted value
-            localLastError = np.multiply(leftSide, rightSide) # hadamard product between the prime weighted and
-            self.m_currentError[index] = localLastError
+    def printEfficiency(self, trainingExamples, trainingSolutions):
+        d = zip(trainingExamples, trainingSolutions)
+        c = 0
+        for x in d:
+            self.feedforward(x[0])
+            if getDecision(self.activations[-1])[x[1]]==1:
+                c += 1
+        print(getDecision(self.activations[-1]))
+        print("Correct Identifications: ")
+        print(c)
+        print("On Target Percentage: ")
+        print((c/len(trainingSolutions))*100)
 
-        return localLastError
-    def runInput(self, array):
-        self.m_inputLayer.setActivation(array)
-        for x in range(1, self.m_numberOfLayers):
-            self.m_layers[x].feedforward()
+    def trainNetwork(self, trainingExamples, trainingSolutions, numEpochs):
+        trainingSpeed = 3.0
+        examplesAndSolutions = list(zip(trainingExamples, trainingSolutions))
+        for x in range(numEpochs):
+            printImg(examplesAndSolutions[0][0])
+            self.printEfficiency(trainingExamples, trainingSolutions)
+            random.shuffle(examplesAndSolutions) # rotate our data set
+            batch_count = 10
+            for x in range(int(len(trainingSolutions)/batch_count)):
+                slice = x * batch_count
+                mini_batch = examplesAndSolutions[slice:slice+batch_count]
+                epoch_w_e = [np.zeros(w.shape) for w in self.weights]  # i did steal this from the tut because it's beautifully efficent syntax
+                epoch_b_e = [np.zeros(b.shape) for b in self.bias]
+                for test in mini_batch:
+                    image, expectedNum = test
+                    w_e, b_e, a_d = self.backprop(image, self.numToArray(expectedNum))
+                    epoch_w_e = [w_cur + w_new for w_cur, w_new in zip(epoch_w_e, w_e)]
+                    epoch_b_e = [b_cur + b_new for b_cur, b_new in zip(epoch_b_e, b_e)]
 
-    def trainNetwork(self):
-        '''
-        Perform multiple training epoch's
-        each epoch consists of running every training example through the network
-        and then calculating cost, then correcting weights and biases with the given costs
-
-        i'm still learning the terminology hear, but i believe this implementation uses
-        stoischratic gradient descent (because it updates the network after each test)
-        instead of batch gradient descent (where we would compile the data from each test, and then process it)
-        '''
-        for epochIndex in range(0, 20): # for each example in the number of training epochs
-            i = 0
-            p=0
-            print('epoch'+str(epochIndex))
-            for trainingImage in self.m_trainingExamples: # for each training example
-                if 0==(i % 1000):
-                    if (p!=0):
-                        print("solution for 7")
-                        print(self.getSolution(self.m_trainingExamples[0]))
-                    print(str(p*10)+'%')
-                    p+=1
-                imgdata = np.array(trainingImage)
-                self.runInput(imgdata)
-                #gradientConstant = self.TRAININGTIME / len(self.m_trainingExamples)
-                gradientConstant = 5.0
-                self.calcError(toNumpyArray(self.m_trainingSolutions[i], 10)) # calculate the error for each layer
-                i += 1
-                for x in range(1,self.m_numberOfLayers):
-                    layerError = self.m_currentError[x]
-                    self.m_layers[x].m_bias = self.m_layers[x].m_bias - gradientConstant*layerError
-                    rightSide = gradientConstant*np.dot(layerError[np.newaxis].T, self.m_layers[x-1].m_activation[np.newaxis]) # unfortunatley, we need to do some weird axis splitting here to get the behavior we want (column vector * row vector)
-                    leftSide = self.m_layers[x].m_weights
-                    finalsub = np.multiply(leftSide, rightSide)
-                    self.m_layers[x].m_weights = self.m_layers[x].m_weights - finalsub
-
-            print("solution for 7")
-            print(self.getMax(self.getSolution(self.m_trainingExamples[0]))[7]==1)
-    def getMax(self, array):
-
-        vMax = -1
-        for x in array:
-            if (x>vMax):
-                vMax = x
-
-        def filter(x):
-            if (x/vMax != 1):
-                return 0
-            return 1
-        return np.asarray(np.vectorize(filter)(array))
-    def getSolution(self, image):
-        self.m_inputLayer.setActivation(image)
-        for x in range(1, self.m_numberOfLayers):
-            self.m_layers[x].feedforward()
-        return self.m_outputLayer.m_activation
-    def testReults(self):
-        successes = 0
-
-        for x in range(0, len(self.m_trainingExamples)):
-            img = self.m_trainingExamples[x]
-            self.runInput(img)
-            correct = self.m_trainingSolutions[x]
-            if (self.getMax(self.getSolution(self.m_trainingExamples[x]))[correct]==1):
-                successes+=1
-
-        print("Neural Network can correctly identify: ")
-        print(successes/100)
-        print("percent of training examples")
+                self.weights = [w - ((trainingSpeed / len(mini_batch)) * err) for w, err in zip(self.weights, epoch_w_e)]
+                self.bias = [b - ((trainingSpeed / len(mini_batch)) * err) for b, err in zip(self.bias, epoch_b_e)]
+            #above, we are summing together all the found errors for these training examples
+            #now, we simply use these epoch values to subtract from the weights
 
 
-def toNumpyArray(value, max):
-    returnVal = np.zeros(max)
-    returnVal.flat[value] = 1
-    return returnVal
 
+        #thus, after each epoch, our weights should change to better match what we want the network to detect
+
+    def saveNetToFile(self, filepath):
+        for i in range(len(self.weights)):
+            x = self.weights[i]
+            np.save(filepath+"/weights"+str(i), x)
+        for i in range(len(self.bias)):
+            x = self.bias[i]
+            np.save(filepath+"/biases" + str(i), x)
+    def loadNetFromFile(self, filepath):
+        for i in range(len(self.weights)):
+            self.weights[i] = np.load(filepath+"/weights"+str(i)+".npy")
+        for i in range(len(self.bias)):
+            self.bias[i] = np.load(filepath+"/biases"+str(i)+".npy")
+    def numToArray(self, value):
+        r = np.zeros((10, 1))
+        r[value] = 1.0
+        return r
+    def costFunction(self, activated, expected):
+        return activated - expected
+
+    def getSolution(self, img):
+        self.feedforward(img)
+        b = getDecision(self.activations[-1])
+        for i in range(10):
+            if b[i]==1.0:
+                return i
+
+def getDecision(array):
+    v = array/np.max(array)
+    return v
+
+
+
+def loadTrainingExampels(filepath):
+    mndata = MNIST(filepath)
+    img, lbl = mndata.load_training()
+    imageArray = [np.reshape(a, (784, 1)) for a in img]
+    solutions = lbl
+    return imageArray, solutions
+
+def loadTestingExample(filepath):
+    mndata = MNIST(filepath)
+    img, lbl = mndata.load_testing()
+    imageArray = [np.reshape(a, (784, 1)) for a in img]
+    solutions = lbl
+    return imageArray, solutions
+
+def sigmoid(x):
+    v = np.clip(x, -500,500)
+    return 1/(1+np.exp(-v))
+def sigmoidprime(x):
+    v = np.clip(x, -500, 500)
+    d=sigmoid(v)
+    return d*(1-d)
 def printImg(array):
     for x in range(0, 28):
         string = ""
         for y in range(0,28):
-            if (array[x*28+y] > 50):
-                string +="_"
+            if array[x*28 + y] >50:
+                string += "B"
             else:
-                string+= " "
+                string +=" "
         print(string)
-def makeColumnVec(arraylike):
-    return np.asmatrix(arraylike).reshape(len(arraylike),1)
-mndata = MNIST('samples')
-images, labels = mndata.load_testing()
+
+def loadfrompng(filepath):
+    def filter(x):
+        bscale = (x[0]-255 + x[1]-255 + x[2]-255)/3
+        return math.fabs(bscale)
+    img = Image.open(filepath)
+    idata = np.array(img)
+    a = np.zeros((784, 1))
+    for x in range(28):
+        for y in range(28):
+            a[x*28 + y] = filter(idata[x][y])
+    return a
+
+
+#printImg(a)
+#d = Network()
+#d.loadNetFromFile('')
+#d.feedforward(a)
+#print(getDecision(d.activations[-1]))
+
+#print(getDecision(d.activations[-1]))
+#print(d.getSolution(a))
+
 d = Network()
-d.m_trainingExamples = np.asarray(np.vectorize(lambda x: x/255)(images))
-d.m_trainingExamples = images
-printImg(images[1])
-print(labels[1])
-d.m_trainingSolutions = labels
-d.trainNetwork()
-d.testReults()
+'''imgs, sols = loadTrainingExampels('')
+timgs, tsols = loadTestingExample('')
+d.trainNetwork(imgs, sols, 5)
+d.saveNetToFile("test2_250")
+d.printEfficiency(imgs, sols)
+d.printEfficiency(timgs, tsols)'''
+d.loadNetFromFile("test2_250")
+a = loadfrompng("0.bmp")
+print(d.getSolution(a))
