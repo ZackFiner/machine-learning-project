@@ -13,7 +13,7 @@ class Network:
     '''
     def __init__(self):
         self.numlayers = 3
-        self.layerShape = [784, 250, 10] # we have one hidden layer of 30 neurons, an input of 784, and an output of 10
+        self.layerShape = [784, 30, 10] # we have one hidden layer of 30 neurons, an input of 784, and an output of 10
         #weight dimensions = thisLayerSze x lastLayerSize
         self.weights = list()
         self.bias = list()
@@ -58,7 +58,7 @@ class Network:
         '''remember, we are multiplying with the layer behind us'''
         #Note: as we'll see below, it is important that our activations are a column vector
         for x in range(self.numlayers-2, 0, -1):  # we work our way backwards from the second to last layer
-            error = np.dot(self.activations[x+1].T, error) * sigmoidprime(self.rawActives[x]) # calculate this layer's error using the transpose of weights infront
+            error = np.dot(self.weights[x+1].T, error) * sigmoidprime(self.rawActives[x]) # calculate this layer's error using the transpose of weights infront
             errWeights[x] = np.dot(error, self.activations[x-1].T)  # Note that we transpose activations, the result should be a matrix, not vector
             errBiass[x] = error
 
@@ -69,7 +69,7 @@ class Network:
         c = 0
         for x in d:
             self.feedforward(x[0])
-            if getDecision(self.activations[-1])[x[1]]==1:
+            if getDecision(self.activations[-1])[x[1]]==1.0:
                 c += 1
         print(getDecision(self.activations[-1]))
         print("Correct Identifications: ")
@@ -162,7 +162,7 @@ def printImg(array):
     for x in range(0, 28):
         string = ""
         for y in range(0,28):
-            if array[x*28 + y] >50:
+            if array[x*28 + y] > 50:
                 string += "B"
             else:
                 string +=" "
@@ -191,12 +191,13 @@ def loadfrompng(filepath):
 #print(d.getSolution(a))
 
 d = Network()
-'''imgs, sols = loadTrainingExampels('')
-timgs, tsols = loadTestingExample('')
-d.trainNetwork(imgs, sols, 5)
-d.saveNetToFile("test2_250")
+imgs, sols = loadTrainingExampels('samples')
+timgs, tsols = loadTestingExample('samples')
+d.trainNetwork(imgs, sols, 30)
+d.saveNetToFile("test3_30")
 d.printEfficiency(imgs, sols)
-d.printEfficiency(timgs, tsols)'''
-d.loadNetFromFile("test2_250")
-a = loadfrompng("0.bmp")
-print(d.getSolution(a))
+d.printEfficiency(timgs, tsols)
+#d.loadNetFromFile("test2_250")
+#a = loadfrompng("0.bmp")
+img, sols = loadTestingExample("samples")
+d.printEfficiency(img, sols)
