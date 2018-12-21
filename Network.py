@@ -72,10 +72,8 @@ class Network:
             if getDecision(self.activations[-1])[x[1]]==1.0:
                 c += 1
         print(getDecision(self.activations[-1]))
-        print("Correct Identifications: ")
-        print(c)
-        print("On Target Percentage: ")
-        print((c/len(trainingSolutions))*100)
+        print("Correct Identifications: " + str(c))
+        print("On Target Percentage: "+str(((c/len(trainingSolutions))*100))+" %")
 
     def trainNetwork(self, trainingExamples, trainingSolutions, numEpochs):
         trainingSpeed = 3.0
@@ -88,7 +86,7 @@ class Network:
             for x in range(int(len(trainingSolutions)/batch_count)):
                 slice = x * batch_count
                 mini_batch = examplesAndSolutions[slice:slice+batch_count]
-                epoch_w_e = [np.zeros(w.shape) for w in self.weights]  # i did steal this from the tut because it's beautifully efficent syntax
+                epoch_w_e = [np.zeros(w.shape) for w in self.weights]
                 epoch_b_e = [np.zeros(b.shape) for b in self.bias]
                 for test in mini_batch:
                     image, expectedNum = test
@@ -191,13 +189,16 @@ def loadfrompng(filepath):
 #print(d.getSolution(a))
 
 d = Network()
+'''
 imgs, sols = loadTrainingExampels('samples')
 timgs, tsols = loadTestingExample('samples')
 d.trainNetwork(imgs, sols, 30)
 d.saveNetToFile("test3_30")
 d.printEfficiency(imgs, sols)
-d.printEfficiency(timgs, tsols)
-#d.loadNetFromFile("test2_250")
-#a = loadfrompng("0.bmp")
+d.printEfficiency(timgs, tsols)'''
+d.loadNetFromFile("test3_30")
+a = loadfrompng("8.bmp")
+printImg(a)
+print(d.getSolution(a))
 img, sols = loadTestingExample("samples")
 d.printEfficiency(img, sols)
