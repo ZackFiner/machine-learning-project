@@ -35,7 +35,7 @@ class Network:
         self.activations[0] = inputActives/255
         for x in range(1, self.numlayers):
             self.rawActives[x] = np.dot(self.weights[x], self.activations[x-1])+self.bias[x]
-            self.activations[x] = sigmoid(self.rawActives[x])
+            self.activations[x] = activation(self.rawActives[x])
 
 
     def backprop(self,input, expected):
@@ -52,13 +52,13 @@ class Network:
         errBiass = [np.zeros(b.shape) for b in self.bias]
         self.feedforward(input)
         activesDs = self.activations.copy()
-        error = self.costFunction(self.activations[-1], expected) * sigmoidprime(self.rawActives[-1])
+        error = self.costFunction(self.activations[-1], expected) * activationPrime(self.rawActives[-1])
         errWeights[self.numlayers-1] = np.dot(error, self.activations[self.numlayers-2].T)
         errBiass[self.numlayers-1] = error
         '''remember, we are multiplying with the layer behind us'''
         #Note: as we'll see below, it is important that our activations are a column vector
         for x in range(self.numlayers-2, 0, -1):  # we work our way backwards from the second to last layer
-            error = np.dot(self.weights[x+1].T, error) * sigmoidprime(self.rawActives[x]) # calculate this layer's error using the transpose of weights infront
+            error = np.dot(self.weights[x+1].T, error) * activationPrime(self.rawActives[x]) # calculate this layer's error using the transpose of weights infront
             errWeights[x] = np.dot(error, self.activations[x-1].T)  # Note that we transpose activations, the result should be a matrix, not vector
             errBiass[x] = error
 
@@ -149,21 +149,36 @@ def loadTestingExample(filepath):
     solutions = lbl
     return imageArray, solutions
 
+
+
 def sigmoid(x):
-    v = np.clip(x, -500,500)
-    return 1/(1+np.exp(-v))
+    return 1/(1+np.exp(-x))
 def sigmoidprime(x):
-    v = np.clip(x, -500, 500)
-    d=sigmoid(v)
+    d=sigmoid(x)
     return d*(1-d)
+
+def tanH(x):
+    return np.tanh(x)
+
+def tanHprime(x):
+    d = tanH(x)
+    return 1-d*d
+def activation(x):
+    v = np.clip(x, -500, 500)
+    return sigmoid(v)
+
+def activationPrime(x):
+    v = np.clip(x, -500, 500)
+    return sigmoidprime(v)
+
 def printImg(array):
     for x in range(0, 28):
         string = ""
         for y in range(0,28):
             if array[x*28 + y] > 50:
-                string += "B"
+                string += "BB"
             else:
-                string +=" "
+                string +="  "
         print(string)
 
 def loadfrompng(filepath):
@@ -187,18 +202,28 @@ def loadfrompng(filepath):
 
 #print(getDecision(d.activations[-1]))
 #print(d.getSolution(a))
+def getSubSet(img, lbl, val):
+    img2 = list()
+    lbl2 = list() # this will all be the same value, but every other efficiency tester needs this
+    for i in range(len(img)):
+        if lbl[i]==val:
+            img2.append(img[i])
+            lbl2.append(lbl[i])
+    return img2, lbl2
 
 d = Network()
-'''
+
 imgs, sols = loadTrainingExampels('samples')
 timgs, tsols = loadTestingExample('samples')
 d.trainNetwork(imgs, sols, 30)
-d.saveNetToFile("test3_30")
+#d.saveNetToFile("test3_30")
 d.printEfficiency(imgs, sols)
-d.printEfficiency(timgs, tsols)'''
+d.printEfficiency(timgs, tsols)
+'''
 d.loadNetFromFile("test3_30")
 a = loadfrompng("8.bmp")
 printImg(a)
 print(d.getSolution(a))
 img, sols = loadTestingExample("samples")
 d.printEfficiency(img, sols)
+'''
