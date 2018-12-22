@@ -38,7 +38,7 @@ class Network:
             self.activations[x] = activation(self.rawActives[x])
 
 
-    def backprop(self,input, expected):
+    def backprop(self, input, expected):
         '''
         :param expected: what output you expect for this example
         :param input: the input activations
@@ -178,7 +178,7 @@ def printImg(array):
             if array[x*28 + y] > 50:
                 string += "BB"
             else:
-                string +="  "
+                string += "  "
         print(string)
 
 def loadfrompng(filepath):
